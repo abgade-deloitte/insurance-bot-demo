@@ -164,6 +164,7 @@ export function installPersonalizedJourneys(Chat){
  Chat.prototype.click=async function(event){
   const target=event.target,flow=this.state.purchaseFlow;
   if(target.closest('[data-download-certificate]')){await downloadCertificate(this);return;}
+ if(target.closest('[data-reopen-personalized-calculator]')&&flow?.estimate){const plan=planForFlow(this),estimate=flow.estimate,addOnMonthly=addOnTotal(flow),coverage=Number(estimate.coverage??plan.coverage),basePremium=Number(estimate.basePremium??plan.premium),monthlyTotal=Number(estimate.premium??(basePremium+addOnMonthly)),term=Number(estimate.term??this.state.profile.term??20),frequency=estimate.frequency||this.state.profile.frequency||'monthly',adjustedPlan={...plan,coverage,premium:basePremium,basePremium};this.state.profile={...this.state.profile,category:'life',goal:plan.goal,coverage,budget:monthlyTotal,term,paymentTerm:term,frequency,selectedProduct:baseCatalogueId(plan.goal)};this.state.purchaseFlow={...flow,stage:'calculator',calculatorReturnStage:'review',syntheticPolicy:adjustedPlan,addOnMonthly};this.persist();this.render();openInsuranceCalculator(this);return;}
   if(target.closest('[data-payment-demo]')){ensureCertificate(this,true);this.persist();}
   if(target.closest('[data-life-journey]')&&this.state.stage==='explore'){return this.sendAdvice(copy(this,'Show me Life Insurance policies','اعرض وثائق تأمين الحياة'),{route:false});}
   const filterButton=target.closest('[data-catalogue-filter]');
