@@ -1,0 +1,8 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Analysis Agent preview</title><style>html,body,iframe{margin:0;border:0;width:100%;height:100%;overflow:hidden;display:block}</style><body><script type="module">
+import {initialState} from '../src/flow.js';
+import {syntheticLifePolicies} from '../src/synthetic-life-policies.js';
+const base=syntheticLifePolicies[0],plan={...base,premium:420,basePremium:420,coverage:750000,score:91};
+const profile={fullName:'Noura Al Saud',age:43,monthlyIncome:24000,salary:24000,dependants:3,occupation:'Finance Director',city:'Riyadh',goal:'protect',coverage:750000,budget:420,term:20,paymentTerm:20,frequency:'monthly',selectedProduct:'family'};
+const seed={...initialState(),open:true,stage:'explore',exploreView:'response',registered:true,profile,purchaseFlow:{stage:'recommendations',category:'life',lifeGoal:'protect',aiAssisted:true,synthetic:true,addOns:['critical-illness','accidental-death']},messages:[]};
+sessionStorage.setItem('art-insurance-demo-v1',JSON.stringify(seed));const frame=document.createElement('iframe');frame.src='../index.html';document.body.append(frame);await new Promise(resolve=>frame.onload=resolve);const doc=frame.contentDocument,win=frame.contentWindow;for(let i=0;i<100&&!win.artDemo;i++)await new Promise(resolve=>setTimeout(resolve,20));doc.querySelector('.synthetic-plan-card.recommended [data-synthetic-plan]').click();for(let i=0;i<100&&!doc.querySelector('[data-calc-input=age]');i++)await new Promise(resolve=>setTimeout(resolve,20));const age=doc.querySelector('[data-calc-input=age]');age.value='47';age.dispatchEvent(new win.Event('input',{bubbles:true}));
+</script></body></html>

@@ -1,0 +1,6 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Recommendation add-ons preview</title><style>html,body,iframe{margin:0;border:0;width:100%;height:100%;overflow:hidden;display:block}</style><body><script type="module">
+import {initialState} from '../src/flow.js';
+const profile={fullName:'Noura Al Saud',age:43,monthlyIncome:24000,salary:24000,dependants:3,occupation:'Finance Director',city:'Riyadh',goal:'protect',coverage:750000,budget:650,term:20,paymentTerm:20,frequency:'monthly',selectedProduct:'family'};
+const seed={...initialState(),open:true,stage:'explore',exploreView:'response',registered:true,profile,purchaseFlow:{stage:'recommendations',category:'life',lifeGoal:'protect',aiAssisted:true,synthetic:true,addOns:['critical-illness','accidental-death']},messages:[]};
+sessionStorage.setItem('art-insurance-demo-v1',JSON.stringify(seed));const frame=document.createElement('iframe');frame.src='../index.html';document.body.append(frame);
+</script></body></html>

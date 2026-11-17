@@ -1,0 +1,30 @@
+import {initialState} from '../src/flow.js';
+const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const until=async(fn,attempts=500)=>{for(let i=0;i<attempts;i++){if(fn())return;await wait(30);}throw Error('Timed out');};
+let passed=0,failed=0;
+const check=(ok,label)=>{const item=document.createElement('li');item.className=ok?'pass':'fail';item.textContent=(ok?'PASS: ':'FAIL: ')+label;document.querySelector('#checks').append(item);ok?passed++:failed++;};
+sessionStorage.removeItem('art-advisor-session');sessionStorage.setItem('art-insurance-demo-v1',JSON.stringify({...initialState(),open:true,stage:'guest'}));
+const frame=document.createElement('iframe');frame.width=1180;frame.height=820;document.body.append(frame);const loaded=new Promise(resolve=>frame.onload=resolve);frame.src='../index.html';await loaded;
+const doc=frame.contentDocument,win=frame.contentWindow,state=()=>win.artDemo.snapshot(),click=selector=>doc.querySelector(selector)?.click();
+try{
+ click('[data-journey=new]');click('[data-new-path=register]');await until(()=>!!doc.querySelector('[data-national-id-upload]'));
+ const input=doc.querySelector('[data-national-id-upload]'),payload={fullName:'Noura Al Saud',mobile:'055123456',nationalId:'2123456789',dateOfBirth:'1990-06-15',monthlyIncome:'24000',occupation:'Finance Director',city:'Riyadh'};
+ const files=new win.DataTransfer();files.items.add(new win.File([JSON.stringify(payload)],'national-id.pdf',{type:'application/pdf'}));input.files=files.files;input.dispatchEvent(new win.Event('change',{bubbles:true}));
+ await until(()=>state().agentDocumentCheck?.status==='valid');
+ check(doc.querySelectorAll('.document-orchestration-work .document-agent-scene').length===4,'Left conversation shows four animated identity workflow agents');
+ check(/Document Scanning Agent/.test(doc.body.textContent)&&/Identity Agent/.test(doc.body.textContent)&&/Validation Agent/.test(doc.body.textContent)&&/Underwriting Agent/.test(doc.body.textContent),'Identity workflow names every specialist in the handoff');
+ check(doc.querySelectorAll('.agent-run-card .agent-handoff-graph .handoff-node').length===4,'Right panel draws the four-agent handoff graph');
+ check(!!doc.querySelector('.current-agent-card')&&!doc.querySelector('.agent-history-version')&&!doc.querySelector('.agent-roster'),'Current identity run stays on top and the specialist roster is removed');
+ await until(()=>state().employmentVerification?.status==='running');
+ check(!!doc.querySelector('.employment-verification-card.running')&&!doc.querySelector('[data-agent-work]'),'Employment verification runs only in the right background panel');
+ check(/MHRSD employment record check/.test(doc.body.textContent)&&/Government-specific verification services/.test(doc.body.textContent),'Background stream shows MHRSD and government verification portal checks');
+ check(/Demonstration simulation/.test(doc.querySelector('.simulation-disclosure')?.textContent||'')&&/No live government portal/.test(doc.querySelector('.simulation-disclosure')?.textContent||''),'Portal activity is explicitly disclosed as a non-live simulation');
+ const timerText=doc.querySelector('.employment-card-head em')?.textContent||'',beforeElapsed=timerText.match(/Elapsed\s+(\d+):(\d+)/);await wait(2500);const afterElapsed=(doc.querySelector('.employment-card-head em')?.textContent||'').match(/Elapsed\s+(\d+):(\d+)/),beforeSeconds=beforeElapsed?Number(beforeElapsed[1])*60+Number(beforeElapsed[2]):-1,afterSeconds=afterElapsed?Number(afterElapsed[1])*60+Number(afterElapsed[2]):-1;
+ check(afterSeconds>beforeSeconds&&/1:45/.test(doc.querySelector('.employment-card-head em')?.textContent||''),'Employment timer counts forward toward a 1:45 completion');
+ check(doc.querySelectorAll('.agent-history-version').length===1&&/Age Risk/.test(doc.querySelector('.agent-history')?.textContent||'')&&/Low/.test(doc.querySelector('.agent-history .agent-risk-signal.low')?.textContent||''),'Completed identity history shows the highlighted low age risk for age 36');
+ check(!!doc.querySelector('.agent-history-version .history-version-mark .icon')&&!/\bv\d+\b/i.test(doc.querySelector('.agent-history-version>summary')?.textContent||''),'History accordion uses the appropriate agent icon instead of v1/v2 labels');
+ await until(()=>state().employmentVerification?.status==='complete',4000);
+ check(!!doc.querySelector('.recommendation-orchestration-work')&&/Recommendation Agent/i.test(doc.querySelector('.agent-run-owner')?.textContent||''),'Completed employment automatically hands off to the 7.5-second Recommendation Agent animation');
+ check(/Employment Risk/.test(doc.querySelector('.agent-history')?.textContent||'')&&/Low/.test(doc.querySelector('.agent-history .agent-risk-signal.low')?.textContent||'')&&doc.querySelectorAll('.agent-history-version').length===2,'Employment completes in history with a highlighted green low-risk result');
+}catch(error){check(false,error.stack||error.message);}
+document.querySelector('#status').textContent=`${passed} passed; ${failed} failed`;document.body.dataset.result=failed?'failed':'passed';
