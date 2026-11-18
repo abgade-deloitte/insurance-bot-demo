@@ -323,6 +323,13 @@ function finalizeCertificateStep(chat){
  if(description)description.textContent=copy(chat,'The purchase journey is complete in this demonstration. Review and download the selected policy certificate below.','اكتملت رحلة الشراء في هذا العرض. راجع شهادة الوثيقة المختارة وقم بتنزيلها أدناه.');
 }
 
+function enhanceMedicalSummaryReview(chat){
+ const flow=chat.state.purchaseFlow,review=chat.host.querySelector('.purchase-flow.final-review');if(!review||flow?.stage!=='purchase')return;
+ const medical=chat.state.medicalSummary,running=chat.state.employmentVerification?.status==='running'||chat.state.medicalDocumentIntelligence?.status==='running'||medical?.status==='pending',complete=Boolean(medical?.status==='complete'&&!running),anchor=review.querySelector('.purchase-contact')||review.querySelector('.selected-policy');
+ if(!review.querySelector('.medical-summary-result'))anchor?.insertAdjacentHTML('afterend',`<section class="medical-summary-result ${complete?'complete':'processing'}"><span>${icon(complete?'check':'heart')}</span><div><small>${copy(chat,'MEDICAL SUMMARY AGENT','ÙˆÙƒÙŠÙ„ Ø§Ù„Ù…Ù„Ø®Øµ Ø§Ù„Ø·Ø¨ÙŠ')}</small><strong>${copy(chat,complete?'Low Medical Risk':'Medical summary processing',complete?'Ù…Ø®Ø§Ø·Ø± Ø·Ø¨ÙŠØ© Ù…Ù†Ø®ÙØ¶Ø©':'Ø¬Ø§Ø±Ù Ø¥Ø¹Ø¯Ø§Ø¯ Ø§Ù„Ù…Ù„Ø®Øµ Ø§Ù„Ø·Ø¨ÙŠ')}</strong><blockquote>&ldquo;${esc(medical?.summary||'The applicant appears to be in good general health and has not reported any major chronic or life-threatening medical conditions at the time of assessment.')}&rdquo;</blockquote></div></section>`);
+ const button=review.querySelector('[data-confirm-purchase]');if(!button)return;button.disabled=running;button.setAttribute('aria-disabled',String(running));if(running){button.innerHTML=`${copy(chat,'Waiting for background checks','Ø§Ù†ØªØ¸Ø§Ø± Ø§ÙƒØªÙ…Ø§Ù„ Ø§Ù„ÙØ­ÙˆØµØ§Øª Ø§Ù„Ø®Ù„ÙÙŠØ©')} ${icon('lock')}`;if(!review.querySelector('[data-policy-background-wait]'))button.insertAdjacentHTML('beforebegin',`<div class="policy-background-wait" data-policy-background-wait><span class="thinking-spinner" aria-hidden="true"></span><span><strong>${copy(chat,'Background agents are still working','Ù„Ø§ ØªØ²Ø§Ù„ Ø§Ù„ÙˆÙƒÙ„Ø§Ø¡ Ø§Ù„Ø®Ù„ÙÙŠØ© ØªØ¹Ù…Ù„')}</strong><small>${copy(chat,'Confirm purchase will unlock automatically after document intelligence and verification finish.','Ø³ÙŠØªÙ… ØªÙØ¹ÙŠÙ„ ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø´Ø±Ø§Ø¡ ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹ Ø¨Ø¹Ø¯ Ø§ÙƒØªÙ…Ø§Ù„ Ø°ÙƒØ§Ø¡ Ø§Ù„Ù…Ø³ØªÙ†Ø¯Ø§Øª ÙˆØ§Ù„ØªØ­Ù‚Ù‚.  ')}</small></span></div>`);}else review.querySelector('[data-policy-background-wait]')?.remove();
+}
+
 function addJourneyDocumentUploads(chat){
  const profileForm=chat.host.querySelector('#customer-profile-form');
  const existingCustomer=chat.state.authenticated||chat.state.profileJourney?.customerType==='existing';
@@ -342,11 +349,13 @@ function addJourneyDocumentUploads(chat){
  for(const form of [profileForm,purchaseForm].filter(Boolean))for(const field of ['identityNumber','mobile'])form.elements[field]?.addEventListener('input',event=>{const value=event.currentTarget.value.trim();event.currentTarget.setCustomValidity(field==='identityNumber'&&value&&!value.includes('•')&&!/^2\d{9}$/.test(value)?nationalIdValidationMessage:field==='mobile'&&value&&!value.includes('•')&&!/^05\d{7}$/.test(value)?mobileValidationMessage:'');});
  if(purchaseForm&&!existingCustomer)replaceNationalIdUploadHandler(chat,purchaseForm);
  wireAutomaticAge(chat);
- const flow=chat.state.purchaseFlow,review=chat.host.querySelector('.purchase-flow.final-review');
- if(!review||flow?.stage!=='purchase'||review.querySelector('[data-supporting-upload]'))return;
- const files=flow.supportingDocuments||[],anchor=review.querySelector('.captured-detail-list')||review.querySelector('.purchase-contact');
+ enhanceMedicalSummaryReview(chat);
+ const flow=chat.state.purchaseFlow,review=chat.host.querySelector('.personalized-review');
+ if(!review||flow?.stage!=='review'||review.querySelector('[data-supporting-upload]'))return;
+ const files=flow.supportingDocuments||[],anchor=review.querySelector('[data-personalized-buy]');
  anchor?.insertAdjacentHTML('afterend',`<section class="journey-upload-card supporting-upload"><span class="journey-upload-icon">${icon('file')}</span><div class="journey-upload-copy"><small>${copy(chat,'OPTIONAL SUPPORTING DOCUMENTS','مستندات داعمة اختيارية')}</small><strong>${copy(chat,'Latest medical report or supporting document','أحدث تقرير طبي أو مستند داعم')}</strong><p>${copy(chat,'Attach one or more documents before payment if available.','أرفق مستنداً واحداً أو أكثر قبل الدفع إذا كان متاحاً.')}</p><span class="journey-upload-status" data-supporting-status>${files.length?`${icon('check')} ${esc(files.map(file=>file.name).join(', '))}`:copy(chat,'No documents selected','لم يتم اختيار مستندات')}</span></div><label class="journey-upload-action">${icon('paperclip')} ${copy(chat,files.length?'Add or replace':'Choose files',files.length?'إضافة أو استبدال':'اختيار الملفات')}<input type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" multiple data-supporting-upload></label></section>`);
  const input=review.querySelector('[data-supporting-upload]'),status=review.querySelector('[data-supporting-status]');input?.addEventListener('change',()=>{const selected=[...(input.files||[])].map(file=>({name:file.name,size:file.size}));if(!selected.length)return;chat.state.purchaseFlow={...chat.state.purchaseFlow,supportingDocuments:selected};chat.persist();chat.startMedicalDocumentIntelligence?.(selected);status.innerHTML=`<span class="thinking-spinner" aria-hidden="true"></span><span><strong>${esc(selected.map(file=>file.name).join(', '))}</strong><small>${esc(copy(chat,'Document Intelligence Agent is reading and classifying the reports in the background.','يقوم وكيل ذكاء المستندات بقراءة التقارير وتصنيفها في الخلفية.'))}</small></span>`;});
+ const medicalUploadCard=review.querySelector('.supporting-upload');if(anchor&&medicalUploadCard)anchor.before(medicalUploadCard);
 }
 
 export function installPersonalizedChatRouting(Chat){
